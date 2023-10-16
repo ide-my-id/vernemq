@@ -116,6 +116,18 @@ translate_listeners(Conf) ->
     {HTTP_SSLIPs, HTTP_SSLMaxConns} = lists:unzip(
         extract("listener.https", "max_connections", InfIntVal, Conf)
     ),
+    {TCPIPs, TCPMaxConnLifetime} = lists:unzip(
+        extract("listener.tcp", "max_connection_lifetime", InfIntVal, Conf)
+    ),
+    {SSLIPs, SSLMaxConnLifetime} = lists:unzip(
+        extract("listener.ssl", "max_connection_lifetime", InfIntVal, Conf)
+    ),
+    {WSIPs, WSMaxConnLifetime} = lists:unzip(
+        extract("listener.ws", "max_connection_lifetime", InfIntVal, Conf)
+    ),
+    {WS_SSLIPs, WS_SSLMaxConnLifetime} = lists:unzip(
+        extract("listener.wss", "max_connection_lifetime", InfIntVal, Conf)
+    ),
 
     {TCPIPs, TCPNrOfAcceptors} = lists:unzip(
         extract("listener.tcp", "nr_of_acceptors", InfIntVal, Conf)
@@ -166,6 +178,16 @@ translate_listeners(Conf) ->
 
     {TCPIPs, TCPProxyProto} = lists:unzip(extract("listener.tcp", "proxy_protocol", BoolVal, Conf)),
     {WSIPs, WSProxyProto} = lists:unzip(extract("listener.ws", "proxy_protocol", BoolVal, Conf)),
+    {WSIPs, WSProxyXFF} = lists:unzip(extract("listener.ws", "proxy_xff_support", BoolVal, Conf)),
+    {WSIPs, WSProxyXFFTrusted} = lists:unzip(
+        extract("listener.ws", "proxy_xff_trusted_intermediate", StrVal, Conf)
+    ),
+    {WSIPs, WSProxyXFFCN} = lists:unzip(
+        extract("listener.ws", "proxy_xff_use_cn_as_username", BoolVal, Conf)
+    ),
+    {WSIPs, WSProxyXFF_CN_HEADER} = lists:unzip(
+        extract("listener.ws", "proxy_xff_cn_header", StrVal, Conf)
+    ),
     {HTTPIPs, HTTPProxyProto} = lists:unzip(
         extract("listener.http", "proxy_protocol", BoolVal, Conf)
     ),
@@ -215,6 +237,9 @@ translate_listeners(Conf) ->
     {HTTPIPs, HTTPConfigMod} = lists:unzip(extract("listener.http", "config_mod", AtomVal, Conf)),
     {HTTPIPs, HTTPConfigFun} = lists:unzip(extract("listener.http", "config_fun", AtomVal, Conf)),
     {HTTPIPs, HTTPModules} = lists:unzip(extract("listener.http", "http_modules", StrVal, Conf)),
+    {HTTPIPs, HTTPMaxLengths} = lists:unzip(
+        extract("listener.http", "max_request_line_length", IntVal, Conf)
+    ),
     {HTTPIPs, HTTPListenerName} = lists:unzip(extract_var("listener.http", "listener_name", Conf)),
 
     {HTTP_SSLIPs, HTTP_SSLListenerName} = lists:unzip(
@@ -229,7 +254,9 @@ translate_listeners(Conf) ->
     {HTTP_SSLIPs, HTTP_SSLHTTPModules} = lists:unzip(
         extract("listener.https", "http_modules", StrVal, Conf)
     ),
-
+    {HTTP_SSLIPs, HTTP_SSLMaxLengths} = lists:unzip(
+        extract("listener.https", "max_request_line_length", IntVal, Conf)
+    ),
     % SSL
     {SSLIPs, SSLCAFiles} = lists:unzip(extract("listener.ssl", "cafile", StrVal, Conf)),
     {SSLIPs, SSLDepths} = lists:unzip(extract("listener.ssl", "depth", IntVal, Conf)),
@@ -238,6 +265,7 @@ translate_listeners(Conf) ->
     {SSLIPs, SSLECCs} = lists:unzip(extract("listener.ssl", "eccs", ECCListVal, Conf)),
     {SSLIPs, SSLCrlFiles} = lists:unzip(extract("listener.ssl", "crlfile", StrVal, Conf)),
     {SSLIPs, SSLKeyFiles} = lists:unzip(extract("listener.ssl", "keyfile", StrVal, Conf)),
+    {SSLIPs, SSLKeyPasswd} = lists:unzip(extract("listener.ssl", "keypasswd", StrVal, Conf)),
     {SSLIPs, SSLRequireCerts} = lists:unzip(
         extract("listener.ssl", "require_certificate", BoolVal, Conf)
     ),
@@ -264,6 +292,7 @@ translate_listeners(Conf) ->
     {WS_SSLIPs, WS_SSLECCs} = lists:unzip(extract("listener.wss", "eccs", ECCListVal, Conf)),
     {WS_SSLIPs, WS_SSLCrlFiles} = lists:unzip(extract("listener.wss", "crlfile", StrVal, Conf)),
     {WS_SSLIPs, WS_SSLKeyFiles} = lists:unzip(extract("listener.wss", "keyfile", StrVal, Conf)),
+    {WS_SSLIPs, WS_SSLKeyPasswd} = lists:unzip(extract("listener.wss", "keypasswd", StrVal, Conf)),
     {WS_SSLIPs, WS_SSLRequireCerts} = lists:unzip(
         extract("listener.wss", "require_certificate", BoolVal, Conf)
     ),
@@ -284,6 +313,9 @@ translate_listeners(Conf) ->
     {VMQ_SSLIPs, VMQ_SSLECCs} = lists:unzip(extract("listener.vmqs", "eccs", ECCListVal, Conf)),
     {VMQ_SSLIPs, VMQ_SSLCrlFiles} = lists:unzip(extract("listener.vmqs", "crlfile", StrVal, Conf)),
     {VMQ_SSLIPs, VMQ_SSLKeyFiles} = lists:unzip(extract("listener.vmqs", "keyfile", StrVal, Conf)),
+    {VMQ_SSLIPs, VMQ_SSLKeyPasswd} = lists:unzip(
+        extract("listener.vmqs", "keypasswd", StrVal, Conf)
+    ),
     {VMQ_SSLIPs, VMQ_SSLRequireCerts} = lists:unzip(
         extract("listener.vmqs", "require_certificate", BoolVal, Conf)
     ),
@@ -310,6 +342,9 @@ translate_listeners(Conf) ->
     {HTTP_SSLIPs, HTTP_SSLKeyFiles} = lists:unzip(
         extract("listener.https", "keyfile", StrVal, Conf)
     ),
+    {HTTP_SSLIPs, HTTP_SSLKeyPasswd} = lists:unzip(
+        extract("listener.https", "keypasswd", StrVal, Conf)
+    ),
     {HTTP_SSLIPs, HTTP_SSLRequireCerts} = lists:unzip(
         extract("listener.https", "require_certificate", BoolVal, Conf)
     ),
@@ -321,6 +356,7 @@ translate_listeners(Conf) ->
         TCPIPs,
         MZip([
             TCPMaxConns,
+            TCPMaxConnLifetime,
             TCPNrOfAcceptors,
             TCPMountPoint,
             TCPProxyProto,
@@ -333,9 +369,14 @@ translate_listeners(Conf) ->
         WSIPs,
         MZip([
             WSMaxConns,
+            WSMaxConnLifetime,
             WSNrOfAcceptors,
             WSMountPoint,
             WSProxyProto,
+            WSProxyXFF,
+            WSProxyXFFTrusted,
+            WSProxyXFFCN,
+            WSProxyXFF_CN_HEADER,
             WSAllowedProto
         ])
     ),
@@ -359,6 +400,7 @@ translate_listeners(Conf) ->
             HTTPNrOfAcceptors,
             HTTPConfigMod,
             HTTPConfigFun,
+            HTTPMaxLengths,
             HTTPModules,
             HTTPListenerName,
             HTTPProxyProto
@@ -369,6 +411,7 @@ translate_listeners(Conf) ->
         SSLIPs,
         MZip([
             SSLMaxConns,
+            SSLMaxConnLifetime,
             SSLNrOfAcceptors,
             SSLTLSHandshakeTimeout,
             SSLMountPoint,
@@ -379,6 +422,7 @@ translate_listeners(Conf) ->
             SSLECCs,
             SSLCrlFiles,
             SSLKeyFiles,
+            SSLKeyPasswd,
             SSLRequireCerts,
             SSLVersions,
             SSLUseIdents,
@@ -395,6 +439,7 @@ translate_listeners(Conf) ->
         WS_SSLIPs,
         MZip([
             WS_SSLMaxConns,
+            WS_SSLMaxConnLifetime,
             WS_SSLNrOfAcceptors,
             WS_SSLTLSHandshakeTimeout,
             WS_SSLMountPoint,
@@ -405,6 +450,7 @@ translate_listeners(Conf) ->
             WS_SSLECCs,
             WS_SSLCrlFiles,
             WS_SSLKeyFiles,
+            WS_SSLKeyPasswd,
             WS_SSLRequireCerts,
             WS_SSLVersions,
             WS_SSLUseIdents,
@@ -425,6 +471,7 @@ translate_listeners(Conf) ->
             VMQ_SSLECCs,
             VMQ_SSLCrlFiles,
             VMQ_SSLKeyFiles,
+            VMQ_SSLKeyPasswd,
             VMQ_SSLRequireCerts,
             VMQ_SSLVersions,
             VMQ_SSLBufferSizes
@@ -443,10 +490,12 @@ translate_listeners(Conf) ->
             HTTP_SSLECCs,
             HTTP_SSLCrlFiles,
             HTTP_SSLKeyFiles,
+            HTTP_SSLKeyPasswd,
             HTTP_SSLRequireCerts,
             HTTP_SSLVersions,
             HTTP_SSLConfigMod,
             HTTP_SSLConfigFun,
+            HTTP_SSLMaxLengths,
             HTTP_SSLHTTPModules,
             HTTP_SSLListenerName
         ])
@@ -484,7 +533,7 @@ extract_var(Prefix, Suffix, Conf) ->
     ].
 
 extract(Prefix, Suffix, Val, Conf) ->
-    Mappings = ["max_connections", "nr_of_acceptors", "mountpoint"],
+    Mappings = ["max_connections", "nr_of_acceptors", "mountpoint", "max_connection_lifetime"],
     ExcludeRootSuffixes =
         %% ssl listener specific
         [
@@ -495,6 +544,7 @@ extract(Prefix, Suffix, Val, Conf) ->
             "eccs",
             "crlfile",
             "keyfile",
+            "keypasswd",
             "require_certificate",
             "tls_version",
             "use_identity_as_username",
@@ -512,10 +562,15 @@ extract(Prefix, Suffix, Val, Conf) ->
             "config_mod",
             "config_fun",
             "http_modules",
+            "max_request_line_length",
             %% mqtt listener specific
             "allowed_protocol_versions",
             %% other
             "proxy_protocol",
+            "proxy_xff_support",
+            "proxy_xff_trusted_intermediate",
+            "proxy_xff_use_cn_as_username",
+            "proxy_xff_cn_header",
             "allow_anonymous_override"
         ],
 

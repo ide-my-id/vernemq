@@ -88,7 +88,8 @@
     reset_counter/2,
     counter_val/1,
     register/1,
-    get_label_info/0
+    get_label_info/0,
+    fetch_external_metric/3
 ]).
 
 %% API functions
@@ -1207,7 +1208,7 @@ counter_entries_def() ->
             [],
             queue_message_unhandled,
             queue_message_unhandled,
-            <<"The number of unhandled messages when connecting with clean session=true.">>
+            <<"The number of unhandled messages when connecting with clean session=true or QoS0 for offline sessions.">>
         ),
         m(
             counter,
@@ -1631,7 +1632,8 @@ fetch_external_metric(Mod, Fun, Default) ->
 
 -spec misc_statistics() -> [{metric_id(), any()}].
 misc_statistics() ->
-    {NrOfSubs, SMemory} = fetch_external_metric(vmq_reg_trie, stats, {0, 0}),
+    RegView = vmq_config:get_env(default_reg_view, vmq_reg_trie),
+    {NrOfSubs, SMemory} = fetch_external_metric(RegView, stats, {0, 0}),
     {NrOfRetain, RMemory} = fetch_external_metric(vmq_retain_srv, stats, {0, 0}),
     {NrOfMQTTConnections, NrOfMQTTWSConnections} = fetch_external_metric(
         vmq_ranch_sup, active_mqtt_connections, {0, 0}

@@ -64,9 +64,19 @@ init(Req, Opts) ->
                         src_port := SrcPort
                     } ->
                         {SrcAddr, SrcPort};
-                    % WS request without proxy_protocol
+                    % WS request without proxy_protocol (might have XFF)
                     error ->
-                        cowboy_req:peer(Req0)
+                        XFF_On = proplists:get_value(proxy_xff_support, Opts, false),
+                        case XFF_On of
+                            true ->
+                                {ok, NewPeer} = vmq_proxy_xff:new_peer(
+                                    Req0,
+                                    proplists:get_value(proxy_xff_trusted_intermediate, Opts, "")
+                                ),
+                                NewPeer;
+                            _ ->
+                                cowboy_req:peer(Req0)
+                        end
                 end,
             FsmMod = proplists:get_value(fsm_mod, Opts, vmq_mqtt_pre_init),
             FsmState =
@@ -85,7 +95,21 @@ init(Req, Opts) ->
                     _ ->
                         case proplists:get_value(proxy_protocol_use_cn_as_username, Opts, false) of
                             false ->
-                                FsmMod:init(Peer, Opts);
+                                % No proxy protocol but we still might have a x-forwarded CN
+                                RequireXFFCN = proplists:get_value(
+                                    xff_use_cn_as_username, Opts, false
+                                ),
+                                case RequireXFFCN of
+                                    false ->
+                                        FsmMod:init(Peer, Opts);
+                                    true ->
+                                        CNHeaderName = proplists:get_value(
+                                            xff_cn_header, Opts, <<"x-ssl-client-cn">>
+                                        ),
+                                        HN = ensure_binary(CNHeaderName),
+                                        XFFCN = cowboy_req:header(HN, Req),
+                                        FsmMod:init(Peer, [{preauth, XFFCN} | Opts])
+                                end;
                             true ->
                                 case ProxyInfo0 of
                                     error ->
@@ -223,7 +247,7 @@ maybe_reply(Out, State) ->
     end.
 
 add_websocket_sec_header(Req) ->
-    case cowboy_req:parse_header(?SEC_WEBSOCKET_PROTOCOL, Req) of
+    case cowboy_req:parse_header(?SEC_WEBSOCKET_PROTOCOL, Req, []) of
         [] ->
             {error, unsupported_protocol};
         SubProtocols ->
@@ -247,3 +271,7 @@ select_protocol([Want | Rest], Have) ->
 
 add_socket(Socket, State) ->
     State#state{socket = Socket}.
+
+ensure_binary(L) when is_list(L) -> list_to_binary(L);
+ensure_binary(L) when is_binary(L) -> L;
+ensure_binary(undefined) -> undefined.

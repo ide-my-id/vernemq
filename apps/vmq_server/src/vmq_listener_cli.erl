@@ -80,6 +80,22 @@ vmq_listener_start_cmd() ->
                 (_) -> false
             end}
         ]},
+        {proxy_xff_trusted_intermediate, [{longname, "proxy_xff_trusted_intermediate"}]},
+        {proxy_xff_support, [
+            {longname, "proxy_xff_support"},
+            {typecast, fun
+                ("true") -> true;
+                (_) -> false
+            end}
+        ]},
+        {proxy_xff_use_cn_as_username, [
+            {longname, "proxy_xff_use_cn_as_username"},
+            {typecast, fun
+                ("true") -> true;
+                (_) -> false
+            end}
+        ]},
+        {proxy_xff_cn_header, [{longname, "proxy_xff_cn_header"}]},
         {allowed_protocol_versions, [
             {longname, "allowed_protocol_versions"},
             {typecast, fun(ProtoVers) ->
@@ -120,6 +136,10 @@ vmq_listener_start_cmd() ->
                 end
             end}
         ]},
+        {keypasswd, [
+            {longname, "keypasswd"},
+            {typecast, fun(MP) -> MP end}
+        ]},
         {pskfile, [
             {longname, "pskfile"},
             {typecast, fun(FileName) ->
@@ -156,6 +176,7 @@ vmq_listener_start_cmd() ->
                 ("tlsv1") -> tlsv1;
                 ("tlsv1.1") -> 'tlsv1.1';
                 ("tlsv1.2") -> 'tlsv1.2';
+                ("tlsv1.3") -> 'tlsv1.3';
                 (V) -> {error, {invalid_flag_value, {'tls-version', V}}}
             end}
         ]},
